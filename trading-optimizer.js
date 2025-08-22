@@ -1,368 +1,406 @@
+
+
+// Advanced Trading Optimization Features
+
 /**
- * Base DeFi Trading Strategy Optimizer
- * Advanced algorithmic trading strategies optimized for Base blockchain
- * Automated yield farming, arbitrage, and portfolio rebalancing
+ * Advanced algorithmic trading strategies
+ * @param {Object} marketData - Real-time market data
+ * @param {Object} userProfile - User trading profile
+ * @returns {Object} Optimized trading strategies
  */
+BaseTradingOptimizer.prototype.generateAdvancedStrategies = function(marketData, userProfile = {}) {
+    const {
+        riskTolerance = 'medium',
+        tradingExperience = 'intermediate',
+        capitalAmount = 10000,
+        timeHorizon = 'medium', // short, medium, long
+        preferredAssets = [],
+        maxDrawdown = 0.15
+    } = userProfile;
 
-class BaseTradingOptimizer {
-    constructor() {
-        this.baseRpcUrl = 'https://mainnet.base.org';
-        this.strategies = {
-            yieldFarming: { enabled: true, riskLevel: 'medium', minAPY: 15 },
-            arbitrage: { enabled: true, riskLevel: 'low', minProfit: 0.5 },
-            liquidityMining: { enabled: true, riskLevel: 'medium', minRewards: 10 },
-            deltaHedging: { enabled: false, riskLevel: 'high', minVolatility: 0.02 }
-        };
-        this.gasOptimization = {
-            maxGasPrice: 2, // gwei for Base L2
-            batchTransactions: true,
-            useMulticall: true
-        };
-        this.riskManagement = {
-            maxPositionSize: 0.25, // 25% of portfolio
-            stopLoss: 0.05, // 5% stop loss
-            takeProfitRatio: 2.0, // 2:1 profit ratio
-            maxDrawdown: 0.15 // 15% max drawdown
-        };
-    }
+    const strategies = [];
 
-    /**
-     * Optimize trading strategy based on market conditions
-     * @param {Object} marketData - Current market conditions
-     * @param {Object} portfolioData - Current portfolio state
-     * @param {Object} preferences - User preferences
-     * @returns {Object} Optimized strategy recommendations
-     */
-    optimizeStrategy(marketData, portfolioData, preferences) {
-        const marketAnalysis = this.analyzeMarketConditions(marketData);
-        const portfolioAnalysis = this.analyzePortfolio(portfolioData);
-        const riskAssessment = this.assessRisk(marketAnalysis, portfolioAnalysis);
-        
-        const optimizedStrategies = this.generateOptimizedStrategies(
-            marketAnalysis, 
-            portfolioAnalysis, 
-            riskAssessment, 
-            preferences
-        );
-        
-        return {
-            marketConditions: marketAnalysis,
-            portfolioHealth: portfolioAnalysis,
-            riskLevel: riskAssessment.overallRisk,
-            recommendedStrategies: optimizedStrategies,
-            executionPlan: this.createExecutionPlan(optimizedStrategies),
-            gasOptimization: this.optimizeGasUsage(optimizedStrategies),
-            expectedReturns: this.calculateExpectedReturns(optimizedStrategies),
-            baseAdvantages: this.getBaseL2Advantages(),
-            timestamp: new Date().toISOString()
-        };
-    }
+    // Momentum-based strategies
+    const momentumStrategy = this.createMomentumStrategy(marketData, {
+        lookbackPeriod: timeHorizon === 'short' ? 7 : timeHorizon === 'medium' ? 30 : 90,
+        momentumThreshold: riskTolerance === 'high' ? 0.05 : riskTolerance === 'medium' ? 0.03 : 0.02,
+        stopLoss: maxDrawdown * 0.5,
+        takeProfit: maxDrawdown * 2
+    });
 
-    /**
-     * Analyze current market conditions
-     * @param {Object} marketData - Market data
-     * @returns {Object} Market analysis
-     */
-    analyzeMarketConditions(marketData) {
-        const volatility = this.calculateVolatility(marketData.priceHistory);
-        const trend = this.identifyTrend(marketData.priceHistory);
-        const liquidityConditions = this.assessLiquidityConditions(marketData);
-        const correlations = this.calculateAssetCorrelations(marketData.assets);
-        
-        return {
-            volatility: {
-                level: volatility > 0.05 ? 'High' : volatility > 0.02 ? 'Medium' : 'Low',
-                value: (volatility * 100).toFixed(2),
-                recommendation: volatility > 0.05 ? 'Reduce position sizes' : 'Normal operations'
-            },
-            trend: {
-                direction: trend.direction,
-                strength: trend.strength,
-                confidence: trend.confidence,
-                recommendation: this.getTrendRecommendation(trend)
-            },
-            liquidity: {
-                overall: liquidityConditions.overall,
-                byProtocol: liquidityConditions.byProtocol,
-                recommendation: liquidityConditions.recommendation
-            },
-            correlations: {
-                averageCorrelation: correlations.average,
-                highestCorrelation: correlations.highest,
-                diversificationScore: correlations.diversificationScore
-            }
-        };
-    }
+    // Mean reversion strategies
+    const meanReversionStrategy = this.createMeanReversionStrategy(marketData, {
+        deviationThreshold: riskTolerance === 'high' ? 2 : riskTolerance === 'medium' ? 2.5 : 3,
+        holdingPeriod: timeHorizon === 'short' ? 3 : timeHorizon === 'medium' ? 7 : 14,
+        maxPositions: Math.floor(capitalAmount / 1000)
+    });
 
-    /**
-     * Generate optimized trading strategies
-     * @param {Object} marketAnalysis - Market conditions
-     * @param {Object} portfolioAnalysis - Portfolio state
-     * @param {Object} riskAssessment - Risk analysis
-     * @param {Object} preferences - User preferences
-     * @returns {Array} Optimized strategies
-     */
-    generateOptimizedStrategies(marketAnalysis, portfolioAnalysis, riskAssessment, preferences) {
-        const strategies = [];
+    // Arbitrage strategies
+    const arbitrageStrategy = this.createArbitrageStrategy(marketData, {
+        minProfitMargin: 0.002, // 0.2%
+        maxExecutionTime: 30, // seconds
+        gasOptimization: true
+    });
+
+    // DCA (Dollar Cost Averaging) strategies
+    const dcaStrategy = this.createDCAStrategy(marketData, {
+        frequency: timeHorizon === 'short' ? 'daily' : timeHorizon === 'medium' ? 'weekly' : 'monthly',
+        amount: capitalAmount * 0.1, // 10% per period
+        volatilityAdjustment: true
+    });
+
+    strategies.push(momentumStrategy, meanReversionStrategy, arbitrageStrategy, dcaStrategy);
+
+    // Filter and rank strategies
+    const rankedStrategies = this.rankStrategiesByPerformance(strategies, marketData);
+    
+    return {
+        strategies: rankedStrategies,
+        recommendation: this.selectOptimalStrategy(rankedStrategies, userProfile),
+        riskMetrics: this.calculateStrategyRisks(rankedStrategies),
+        backtestResults: this.performQuickBacktest(rankedStrategies, marketData)
+    };
+};
+
+/**
+ * Create momentum-based trading strategy
+ * @param {Object} marketData - Market data
+ * @param {Object} params - Strategy parameters
+ * @returns {Object} Momentum strategy
+ */
+BaseTradingOptimizer.prototype.createMomentumStrategy = function(marketData, params) {
+    const { lookbackPeriod, momentumThreshold, stopLoss, takeProfit } = params;
+    
+    const signals = [];
+    const priceHistory = marketData.priceHistory || [];
+    
+    for (let i = lookbackPeriod; i < priceHistory.length; i++) {
+        const currentPrice = priceHistory[i].close;
+        const pastPrice = priceHistory[i - lookbackPeriod].close;
+        const momentum = (currentPrice - pastPrice) / pastPrice;
         
-        // Yield Farming Strategy
-        if (this.strategies.yieldFarming.enabled && riskAssessment.overallRisk !== 'High') {
-            strategies.push({
-                type: 'yieldFarming',
-                protocol: this.selectOptimalYieldProtocol(marketAnalysis),
-                allocation: this.calculateOptimalAllocation('yieldFarming', riskAssessment),
-                expectedAPY: this.calculateExpectedAPY(marketAnalysis),
-                riskLevel: 'Medium',
-                timeframe: '30-90 days',
-                baseOptimizations: [
-                    'Low gas costs enable frequent compounding',
-                    'Multiple Base DEX options for optimal yields',
-                    'Reduced MEV risk on Base L2'
-                ]
+        if (Math.abs(momentum) > momentumThreshold) {
+            signals.push({
+                timestamp: priceHistory[i].timestamp,
+                action: momentum > 0 ? 'buy' : 'sell',
+                price: currentPrice,
+                momentum: momentum,
+                confidence: Math.min(Math.abs(momentum) / momentumThreshold, 1),
+                stopLoss: momentum > 0 ? currentPrice * (1 - stopLoss) : currentPrice * (1 + stopLoss),
+                takeProfit: momentum > 0 ? currentPrice * (1 + takeProfit) : currentPrice * (1 - takeProfit)
             });
         }
-        
-        // Arbitrage Strategy
-        if (this.strategies.arbitrage.enabled) {
-            const arbitrageOpportunities = this.findArbitrageOpportunities(marketAnalysis);
-            if (arbitrageOpportunities.length > 0) {
-                strategies.push({
-                    type: 'arbitrage',
-                    opportunities: arbitrageOpportunities,
-                    allocation: this.calculateOptimalAllocation('arbitrage', riskAssessment),
-                    expectedProfit: this.calculateArbitrageProfit(arbitrageOpportunities),
-                    riskLevel: 'Low',
-                    timeframe: 'Real-time',
-                    baseOptimizations: [
-                        'Sub-second execution on Base L2',
-                        'Minimal gas costs for small arbitrages',
-                        'Cross-DEX opportunities within Base ecosystem'
-                    ]
-                });
-            }
-        }
-        
-        // Liquidity Mining Strategy
-        if (this.strategies.liquidityMining.enabled) {
-            strategies.push({
-                type: 'liquidityMining',
-                pools: this.selectOptimalLiquidityPools(marketAnalysis),
-                allocation: this.calculateOptimalAllocation('liquidityMining', riskAssessment),
-                expectedRewards: this.calculateLiquidityRewards(marketAnalysis),
-                riskLevel: 'Medium',
-                timeframe: '60-180 days',
-                baseOptimizations: [
-                    'Native Base token rewards',
-                    'Ecosystem growth participation',
-                    'Reduced impermanent loss on stable pairs'
-                ]
-            });
-        }
-        
-        // Delta Hedging Strategy (Advanced)
-        if (this.strategies.deltaHedging.enabled && preferences.riskTolerance === 'High') {
-            strategies.push({
-                type: 'deltaHedging',
-                instruments: this.selectHedgingInstruments(marketAnalysis),
-                allocation: this.calculateOptimalAllocation('deltaHedging', riskAssessment),
-                expectedReturn: this.calculateHedgingReturns(marketAnalysis),
-                riskLevel: 'High',
-                timeframe: '1-30 days',
-                baseOptimizations: [
-                    'Real-time rebalancing with low gas costs',
-                    'Options protocols on Base',
-                    'Perpetual futures integration'
-                ]
-            });
-        }
-        
-        return strategies.sort((a, b) => b.expectedReturn - a.expectedReturn);
     }
+    
+    return {
+        name: 'Momentum Strategy',
+        type: 'momentum',
+        signals: signals,
+        parameters: params,
+        expectedReturn: this.calculateExpectedReturn(signals),
+        riskLevel: this.calculateRiskLevel(signals),
+        winRate: this.calculateWinRate(signals),
+        sharpeRatio: this.calculateSharpeRatio(signals)
+    };
+};
 
-    /**
-     * Create detailed execution plan
-     * @param {Array} strategies - Optimized strategies
-     * @returns {Object} Execution plan
-     */
-    createExecutionPlan(strategies) {
-        const plan = {
-            immediate: [],
-            shortTerm: [],
-            longTerm: [],
-            contingency: []
-        };
+/**
+ * Create mean reversion trading strategy
+ * @param {Object} marketData - Market data
+ * @param {Object} params - Strategy parameters
+ * @returns {Object} Mean reversion strategy
+ */
+BaseTradingOptimizer.prototype.createMeanReversionStrategy = function(marketData, params) {
+    const { deviationThreshold, holdingPeriod, maxPositions } = params;
+    
+    const signals = [];
+    const priceHistory = marketData.priceHistory || [];
+    const movingAverage = this.calculateMovingAverage(priceHistory, 20);
+    const standardDeviation = this.calculateStandardDeviation(priceHistory, 20);
+    
+    for (let i = 20; i < priceHistory.length; i++) {
+        const currentPrice = priceHistory[i].close;
+        const ma = movingAverage[i];
+        const stdDev = standardDeviation[i];
+        const zScore = (currentPrice - ma) / stdDev;
         
-        strategies.forEach(strategy => {
-            const execution = {
-                strategy: strategy.type,
-                priority: this.calculatePriority(strategy),
-                steps: this.generateExecutionSteps(strategy),
-                gasEstimate: this.estimateGasCosts(strategy),
-                timing: this.optimizeExecutionTiming(strategy)
-            };
+        if (Math.abs(zScore) > deviationThreshold) {
+            signals.push({
+                timestamp: priceHistory[i].timestamp,
+                action: zScore > 0 ? 'sell' : 'buy', // Contrarian
+                price: currentPrice,
+                zScore: zScore,
+                confidence: Math.min(Math.abs(zScore) / deviationThreshold, 1),
+                targetPrice: ma, // Expect reversion to mean
+                holdingPeriod: holdingPeriod,
+                exitCondition: 'mean_reversion_or_time'
+            });
+        }
+    }
+    
+    return {
+        name: 'Mean Reversion Strategy',
+        type: 'mean_reversion',
+        signals: signals.slice(0, maxPositions),
+        parameters: params,
+        expectedReturn: this.calculateExpectedReturn(signals),
+        riskLevel: 'medium',
+        winRate: this.calculateWinRate(signals),
+        averageHoldingTime: holdingPeriod
+    };
+};
+
+/**
+ * Advanced portfolio rebalancing with dynamic allocation
+ * @param {Object} portfolio - Current portfolio
+ * @param {Object} marketConditions - Market analysis
+ * @returns {Object} Rebalancing recommendations
+ */
+BaseTradingOptimizer.prototype.dynamicPortfolioRebalancing = function(portfolio, marketConditions) {
+    const { volatility, trend, liquidityConditions } = marketConditions;
+    
+    // Adjust allocation based on market conditions
+    let riskAdjustment = 1;
+    if (volatility > 0.3) riskAdjustment *= 0.8; // Reduce risk in high volatility
+    if (trend === 'bearish') riskAdjustment *= 0.7; // Reduce risk in bear market
+    if (liquidityConditions === 'poor') riskAdjustment *= 0.9; // Reduce risk in poor liquidity
+    
+    const rebalancingActions = [];
+    const targetAllocations = {};
+    
+    // Calculate optimal allocations
+    Object.keys(portfolio.positions).forEach(asset => {
+        const position = portfolio.positions[asset];
+        const currentWeight = position.value / portfolio.totalValue;
+        const baseTargetWeight = position.targetWeight || 0.1;
+        const adjustedTargetWeight = baseTargetWeight * riskAdjustment;
+        
+        targetAllocations[asset] = adjustedTargetWeight;
+        
+        const weightDifference = currentWeight - adjustedTargetWeight;
+        const rebalanceThreshold = 0.05; // 5%
+        
+        if (Math.abs(weightDifference) > rebalanceThreshold) {
+            const action = weightDifference > 0 ? 'sell' : 'buy';
+            const amount = Math.abs(weightDifference) * portfolio.totalValue;
             
-            if (strategy.timeframe === 'Real-time') {
-                plan.immediate.push(execution);
-            } else if (strategy.timeframe.includes('days')) {
-                plan.shortTerm.push(execution);
-            } else {
-                plan.longTerm.push(execution);
-            }
-        });
-        
-        // Add contingency plans
-        plan.contingency = [
-            {
-                trigger: 'Market volatility > 10%',
-                action: 'Reduce all position sizes by 50%',
-                priority: 'High'
-            },
-            {
-                trigger: 'Portfolio drawdown > 15%',
-                action: 'Exit all high-risk positions',
-                priority: 'Critical'
-            },
-            {
-                trigger: 'Base network congestion',
-                action: 'Delay non-critical transactions',
-                priority: 'Medium'
-            }
-        ];
-        
-        return plan;
-    }
-
-    /**
-     * Optimize gas usage for strategy execution
-     * @param {Array} strategies - Trading strategies
-     * @returns {Object} Gas optimization plan
-     */
-    optimizeGasUsage(strategies) {
-        const gasOptimization = {
-            batchingOpportunities: [],
-            multicallTransactions: [],
-            timingOptimization: [],
-            estimatedSavings: 0
-        };
-        
-        // Identify batching opportunities
-        strategies.forEach(strategy => {
-            if (strategy.type === 'arbitrage' || strategy.type === 'liquidityMining') {
-                gasOptimization.batchingOpportunities.push({
-                    strategy: strategy.type,
-                    transactions: this.identifyBatchableTransactions(strategy),
-                    savings: this.calculateBatchingSavings(strategy)
-                });
-            }
-        });
-        
-        // Calculate total savings
-        gasOptimization.estimatedSavings = gasOptimization.batchingOpportunities
-            .reduce((total, batch) => total + batch.savings, 0);
-        
-        gasOptimization.baseL2Advantages = [
-            'Gas costs 10-100x lower than Ethereum mainnet',
-            'Predictable gas pricing enables better strategy execution',
-            'Fast finality allows for rapid strategy adjustments',
-            'Lower barriers to entry for smaller position sizes'
-        ];
-        
-        return gasOptimization;
-    }
-
-    /**
-     * Calculate expected returns for strategies
-     * @param {Array} strategies - Trading strategies
-     * @returns {Object} Expected returns analysis
-     */
-    calculateExpectedReturns(strategies) {
-        const returns = {
-            conservative: 0,
-            realistic: 0,
-            optimistic: 0,
-            breakdown: []
-        };
-        
-        strategies.forEach(strategy => {
-            const strategyReturns = this.calculateStrategyReturns(strategy);
-            returns.conservative += strategyReturns.conservative * strategy.allocation;
-            returns.realistic += strategyReturns.realistic * strategy.allocation;
-            returns.optimistic += strategyReturns.optimistic * strategy.allocation;
-            
-            returns.breakdown.push({
-                strategy: strategy.type,
-                allocation: strategy.allocation,
-                expectedReturn: strategyReturns.realistic,
-                riskAdjustedReturn: strategyReturns.realistic / this.getRiskMultiplier(strategy.riskLevel)
+            rebalancingActions.push({
+                asset: asset,
+                action: action,
+                amount: amount,
+                currentWeight: currentWeight,
+                targetWeight: adjustedTargetWeight,
+                priority: Math.abs(weightDifference) / rebalanceThreshold,
+                estimatedCost: this.estimateTransactionCost(asset, amount),
+                optimalTiming: this.calculateOptimalExecutionTime(asset, amount)
             });
-        });
+        }
+    });
+    
+    // Sort by priority and cost-effectiveness
+    rebalancingActions.sort((a, b) => {
+        const aCostEffectiveness = a.priority / (a.estimatedCost / a.amount);
+        const bCostEffectiveness = b.priority / (b.estimatedCost / b.amount);
+        return bCostEffectiveness - aCostEffectiveness;
+    });
+    
+    return {
+        actions: rebalancingActions,
+        targetAllocations: targetAllocations,
+        riskAdjustment: riskAdjustment,
+        estimatedCosts: rebalancingActions.reduce((sum, action) => sum + action.estimatedCost, 0),
+        expectedImprovement: this.calculateRebalancingBenefit(rebalancingActions),
+        executionPlan: this.createExecutionPlan(rebalancingActions),
+        monitoringSchedule: this.createMonitoringSchedule(portfolio, marketConditions)
+    };
+};
+
+/**
+ * Advanced gas optimization for trading
+ * @param {Array} transactions - Pending transactions
+ * @param {Object} networkConditions - Network state
+ * @returns {Object} Gas optimization strategy
+ */
+BaseTradingOptimizer.prototype.optimizeGasStrategy = function(transactions, networkConditions) {
+    const { currentGasPrice, networkCongestion, predictedGasPrices } = networkConditions;
+    
+    const optimizedTransactions = transactions.map(tx => {
+        const urgency = tx.urgency || 'medium';
+        const maxGasPrice = tx.maxGasPrice || currentGasPrice * 1.5;
+        
+        let recommendedGasPrice;
+        let executionTiming;
+        
+        switch (urgency) {
+            case 'high':
+                recommendedGasPrice = Math.min(currentGasPrice * 1.2, maxGasPrice);
+                executionTiming = 'immediate';
+                break;
+            case 'medium':
+                recommendedGasPrice = networkCongestion > 0.7 ? 
+                    currentGasPrice * 1.1 : currentGasPrice;
+                executionTiming = networkCongestion > 0.8 ? 'delayed' : 'immediate';
+                break;
+            case 'low':
+                recommendedGasPrice = Math.min(currentGasPrice * 0.9, maxGasPrice);
+                executionTiming = 'optimal_window';
+                break;
+        }
         
         return {
-            ...returns,
-            riskAdjustedReturn: returns.realistic / this.getPortfolioRiskMultiplier(strategies),
-            timeToBreakeven: this.calculateBreakevenTime(returns.realistic),
-            confidenceInterval: this.calculateConfidenceInterval(strategies)
+            ...tx,
+            recommendedGasPrice: recommendedGasPrice,
+            executionTiming: executionTiming,
+            estimatedCost: recommendedGasPrice * tx.gasLimit,
+            savingsOpportunity: (currentGasPrice - recommendedGasPrice) * tx.gasLimit,
+            optimalExecutionWindow: this.findOptimalExecutionWindow(tx, predictedGasPrices)
         };
-    }
+    });
+    
+    // Batch optimization
+    const batchOpportunities = this.identifyBatchOpportunities(optimizedTransactions);
+    
+    return {
+        optimizedTransactions: optimizedTransactions,
+        batchOpportunities: batchOpportunities,
+        totalEstimatedSavings: optimizedTransactions.reduce((sum, tx) => 
+            sum + (tx.savingsOpportunity || 0), 0
+        ),
+        networkRecommendation: this.getNetworkRecommendation(networkConditions),
+        executionSchedule: this.createGasOptimizedSchedule(optimizedTransactions)
+    };
+};
 
-    /**
-     * Get Base L2 specific advantages
-     * @returns {Object} Base advantages
-     */
-    getBaseL2Advantages() {
-        return {
-            gasEfficiency: {
-                advantage: 'Ultra-low gas costs',
-                impact: 'Enables profitable micro-strategies and frequent rebalancing',
-                savings: '90-99% compared to Ethereum mainnet'
-            },
-            speed: {
-                advantage: 'Fast transaction finality',
-                impact: 'Rapid strategy execution and arbitrage opportunities',
-                timing: '1-2 second confirmation times'
-            },
-            ecosystem: {
-                advantage: 'Growing DeFi ecosystem',
-                impact: 'Multiple protocols for yield optimization',
-                protocols: ['Uniswap V3', 'Aerodrome', 'BaseSwap', 'Compound']
-            },
-            security: {
-                advantage: 'Ethereum-level security',
-                impact: 'Institutional-grade security with L2 benefits',
-                backing: 'Secured by Ethereum mainnet'
-            }
-        };
-    }
+/**
+ * Machine learning-based price prediction
+ * @param {Object} marketData - Historical market data
+ * @param {Object} features - Additional features
+ * @returns {Object} Price predictions
+ */
+BaseTradingOptimizer.prototype.predictPriceMovements = function(marketData, features = {}) {
+    const { priceHistory, volumeHistory, socialSentiment, onChainMetrics } = marketData;
+    
+    // Simple moving average crossover prediction (placeholder for ML model)
+    const shortMA = this.calculateMovingAverage(priceHistory, 10);
+    const longMA = this.calculateMovingAverage(priceHistory, 30);
+    const rsi = this.calculateRSI(priceHistory, 14);
+    const macd = this.calculateMACD(priceHistory);
+    
+    const predictions = [];
+    const currentPrice = priceHistory[priceHistory.length - 1].close;
+    
+    // Generate predictions for different time horizons
+    const timeHorizons = [1, 7, 30]; // 1 day, 1 week, 1 month
+    
+    timeHorizons.forEach(days => {
+        const shortTrend = shortMA[shortMA.length - 1] > longMA[longMA.length - 1];
+        const rsiSignal = rsi[rsi.length - 1];
+        const macdSignal = macd.histogram[macd.histogram.length - 1];
+        
+        let priceDirection = 'neutral';
+        let confidence = 0.5;
+        let expectedReturn = 0;
+        
+        // Simple prediction logic (replace with actual ML model)
+        if (shortTrend && rsiSignal < 70 && macdSignal > 0) {
+            priceDirection = 'bullish';
+            confidence = 0.7;
+            expectedReturn = 0.05 * (days / 30); // 5% monthly
+        } else if (!shortTrend && rsiSignal > 30 && macdSignal < 0) {
+            priceDirection = 'bearish';
+            confidence = 0.7;
+            expectedReturn = -0.03 * (days / 30); // -3% monthly
+        }
+        
+        predictions.push({
+            timeHorizon: days + ' days',
+            direction: priceDirection,
+            confidence: confidence,
+            expectedReturn: (expectedReturn * 100).toFixed(2) + '%',
+            targetPrice: (currentPrice * (1 + expectedReturn)).toFixed(4),
+            supportLevel: (currentPrice * 0.95).toFixed(4),
+            resistanceLevel: (currentPrice * 1.05).toFixed(4)
+        });
+    });
+    
+    return {
+        predictions: predictions,
+        technicalIndicators: {
+            rsi: rsi[rsi.length - 1].toFixed(2),
+            macd: macd.macd[macd.macd.length - 1].toFixed(4),
+            shortMA: shortMA[shortMA.length - 1].toFixed(4),
+            longMA: longMA[longMA.length - 1].toFixed(4)
+        },
+        marketSentiment: this.analyzeSentiment(socialSentiment),
+        riskFactors: this.identifyRiskFactors(marketData, features),
+        tradingRecommendation: this.generateTradingRecommendation(predictions)
+    };
+};
 
-    /**
-     * Mock calculation methods (implement with real data)
-     */
-    calculateVolatility(priceHistory) {
-        // Mock implementation - replace with actual volatility calculation
-        return 0.025; // 2.5% daily volatility
+/**
+ * Calculate RSI (Relative Strength Index)
+ * @param {Array} priceHistory - Price history
+ * @param {number} period - RSI period
+ * @returns {Array} RSI values
+ */
+BaseTradingOptimizer.prototype.calculateRSI = function(priceHistory, period = 14) {
+    const gains = [];
+    const losses = [];
+    
+    for (let i = 1; i < priceHistory.length; i++) {
+        const change = priceHistory[i].close - priceHistory[i - 1].close;
+        gains.push(change > 0 ? change : 0);
+        losses.push(change < 0 ? Math.abs(change) : 0);
     }
-
-    identifyTrend(priceHistory) {
-        // Mock implementation - replace with actual trend analysis
-        return {
-            direction: 'Bullish',
-            strength: 0.7,
-            confidence: 0.85
-        };
+    
+    const rsi = [];
+    for (let i = period - 1; i < gains.length; i++) {
+        const avgGain = gains.slice(i - period + 1, i + 1).reduce((a, b) => a + b) / period;
+        const avgLoss = losses.slice(i - period + 1, i + 1).reduce((a, b) => a + b) / period;
+        const rs = avgGain / (avgLoss || 0.001);
+        rsi.push(100 - (100 / (1 + rs)));
     }
+    
+    return rsi;
+};
 
-    selectOptimalYieldProtocol(marketAnalysis) {
-        // Mock implementation - replace with actual protocol selection logic
-        return {
-            name: 'Aerodrome',
-            expectedAPY: 18.5,
-            riskScore: 6.2,
-            liquidityScore: 8.7
-        };
+/**
+ * Calculate MACD (Moving Average Convergence Divergence)
+ * @param {Array} priceHistory - Price history
+ * @returns {Object} MACD data
+ */
+BaseTradingOptimizer.prototype.calculateMACD = function(priceHistory) {
+    const ema12 = this.calculateEMA(priceHistory, 12);
+    const ema26 = this.calculateEMA(priceHistory, 26);
+    
+    const macdLine = ema12.map((val, i) => val - ema26[i]);
+    const signalLine = this.calculateEMA(macdLine.map(val => ({ close: val })), 9);
+    const histogram = macdLine.map((val, i) => val - signalLine[i]);
+    
+    return {
+        macd: macdLine,
+        signal: signalLine,
+        histogram: histogram
+    };
+};
+
+/**
+ * Calculate EMA (Exponential Moving Average)
+ * @param {Array} priceHistory - Price history
+ * @param {number} period - EMA period
+ * @returns {Array} EMA values
+ */
+BaseTradingOptimizer.prototype.calculateEMA = function(priceHistory, period) {
+    const multiplier = 2 / (period + 1);
+    const ema = [priceHistory[0].close];
+    
+    for (let i = 1; i < priceHistory.length; i++) {
+        const currentEMA = (priceHistory[i].close * multiplier) + (ema[i - 1] * (1 - multiplier));
+        ema.push(currentEMA);
     }
-}
-
-// Export for Base dApp integration
+    
+    return ema;
+};ation
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = BaseTradingOptimizer;
 }
