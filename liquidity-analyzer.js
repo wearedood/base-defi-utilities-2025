@@ -1,343 +1,326 @@
+
+
+// Advanced Liquidity Analysis Features
+
 /**
- * Base Liquidity Pool Analyzer
- * Advanced analytics and monitoring tools for Base blockchain liquidity pools
- * Real-time analysis of pool health, arbitrage opportunities, and risk metrics
+ * Advanced cross-DEX liquidity comparison
+ * @param {string} token0 - First token address
+ * @param {string} token1 - Second token address
+ * @returns {Object} Cross-DEX analysis
  */
-
-class BaseLiquidityAnalyzer {
-    constructor() {
-        this.baseRpcUrl = 'https://mainnet.base.org';
-        this.dexProtocols = {
-            uniswap_v3: {
-                factory: '0x33128a8fC17869897dcE68Ed026d694621f6FDfD',
-                router: '0x2626664c2603336E57B271c5C0b26F421741e481',
-                fees: [0.0001, 0.0005, 0.003, 0.01]
-            },
-            aerodrome: {
-                factory: '0x420DD381b31aEf6683db6B902084cB0FFECe40Da',
-                router: '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43',
-                fees: [0.0001, 0.0005, 0.003]
-            },
-            baseswap: {
-                factory: '0xFDa619b6d20975be80A10332cD39b9a4b0FAa8BB',
-                router: '0x327Df1E6de05895d2ab08513aaDD9313Fe505d86',
-                fees: [0.0025]
-            }
-        };
-        this.riskThresholds = {
-            lowLiquidity: 10000,
-            highVolatility: 0.05,
-            concentrationRisk: 0.7
-        };
-    }
-
-    /**
-     * Analyze liquidity pool health and metrics
-     * @param {string} poolAddress - Pool contract address
-     * @param {string} protocol - DEX protocol name
-     * @returns {Object} Comprehensive pool analysis
-     */
-    async analyzePool(poolAddress, protocol) {
+BaseLiquidityAnalyzer.prototype.compareCrossDEXLiquidity = async function(token0, token1) {
+    const dexes = ['uniswap_v3', 'aerodrome', 'baseswap'];
+    const results = {};
+    
+    for (const dex of dexes) {
         try {
-            const poolData = await this.fetchPoolData(poolAddress, protocol);
+            const poolData = await this.fetchPoolData(`${token0}-${token1}`, dex);
             const healthMetrics = this.calculateHealthMetrics(poolData);
-            const riskAssessment = this.assessRisks(poolData);
-            const arbitrageOpportunities = await this.findArbitrageOpportunities(poolData);
+            const arbitrageOpps = await this.findArbitrageOpportunities(poolData);
             
-            return {
-                poolAddress,
-                protocol,
-                basicMetrics: {
-                    tvl: poolData.tvl,
-                    volume24h: poolData.volume24h,
-                    fees24h: poolData.fees24h,
-                    apy: this.calculateAPY(poolData),
-                    utilization: (poolData.volume24h / poolData.tvl * 100).toFixed(2)
-                },
-                healthMetrics,
-                riskAssessment,
-                arbitrageOpportunities,
-                recommendations: this.generateRecommendations(healthMetrics, riskAssessment),
-                baseOptimized: true,
-                timestamp: new Date().toISOString()
+            results[dex] = {
+                tvl: poolData.tvl,
+                volume24h: poolData.volume24h,
+                fees24h: poolData.fees24h,
+                healthScore: healthMetrics.score,
+                priceStability: healthMetrics.priceStability,
+                arbitrageScore: arbitrageOpps.score,
+                liquidityDepth: this.calculateLiquidityDepth(poolData),
+                slippageAt1k: this.calculateSlippage(1000, poolData.tvl),
+                slippageAt10k: this.calculateSlippage(10000, poolData.tvl),
+                slippageAt100k: this.calculateSlippage(100000, poolData.tvl)
             };
         } catch (error) {
-            throw new Error(`Pool analysis failed: ${error.message}`);
+            results[dex] = { error: error.message };
         }
     }
+    
+    // Find best DEX for different trade sizes
+    const recommendations = this.generateDEXRecommendations(results);
+    
+    return {
+        comparison: results,
+        recommendations: recommendations,
+        bestOverall: this.findBestDEX(results),
+        timestamp: new Date().toISOString()
+    };
+};
 
-    /**
-     * Calculate pool health metrics
-     * @param {Object} poolData - Raw pool data
-     * @returns {Object} Health metrics
-     */
-    calculateHealthMetrics(poolData) {
-        const liquidityDepth = this.calculateLiquidityDepth(poolData);
-        const priceStability = this.calculatePriceStability(poolData);
-        const volumeConsistency = this.calculateVolumeConsistency(poolData);
-        
+/**
+ * Calculate advanced slippage with price impact
+ * @param {number} tradeAmount - Amount to trade
+ * @param {number} poolTVL - Pool total value locked
+ * @param {Object} poolData - Additional pool data
+ * @returns {Object} Detailed slippage analysis
+ */
+BaseLiquidityAnalyzer.prototype.calculateAdvancedSlippage = function(tradeAmount, poolTVL, poolData = {}) {
+    const { token0Reserve = poolTVL / 2, token1Reserve = poolTVL / 2, fee = 0.003 } = poolData;
+    
+    // Constant product formula with fees
+    const k = token0Reserve * token1Reserve;
+    const tradeAmountAfterFee = tradeAmount * (1 - fee);
+    
+    // Calculate output amount
+    const newToken0Reserve = token0Reserve + tradeAmountAfterFee;
+    const newToken1Reserve = k / newToken0Reserve;
+    const outputAmount = token1Reserve - newToken1Reserve;
+    
+    // Calculate expected amount without slippage
+    const currentPrice = token1Reserve / token0Reserve;
+    const expectedOutput = tradeAmount * currentPrice;
+    
+    // Calculate slippage
+    const slippage = (expectedOutput - outputAmount) / expectedOutput;
+    const priceImpact = (outputAmount / token1Reserve);
+    
+    // Calculate different slippage scenarios
+    const scenarios = [
+        { amount: tradeAmount * 0.1, label: '10% of trade' },
+        { amount: tradeAmount * 0.5, label: '50% of trade' },
+        { amount: tradeAmount, label: 'Full trade' },
+        { amount: tradeAmount * 2, label: '2x trade' },
+        { amount: tradeAmount * 5, label: '5x trade' }
+    ];
+    
+    const slippageScenarios = scenarios.map(scenario => {
+        const scenarioSlippage = this.calculateSlippage(scenario.amount, poolTVL);
         return {
-            liquidityDepth: {
-                score: liquidityDepth.score,
-                rating: liquidityDepth.rating,
-                depth1Percent: liquidityDepth.depth1Percent,
-                depth5Percent: liquidityDepth.depth5Percent
-            },
-            priceStability: {
-                score: priceStability.score,
-                rating: priceStability.rating,
-                volatility24h: priceStability.volatility24h,
-                priceDeviation: priceStability.priceDeviation
-            },
-            volumeConsistency: {
-                score: volumeConsistency.score,
-                rating: volumeConsistency.rating,
-                volumeVariance: volumeConsistency.variance,
-                trendDirection: volumeConsistency.trend
-            },
-            overallHealth: this.calculateOverallHealth(liquidityDepth, priceStability, volumeConsistency)
+            ...scenario,
+            slippage: scenarioSlippage,
+            severity: scenarioSlippage > 5 ? 'High' : scenarioSlippage > 2 ? 'Medium' : 'Low'
         };
-    }
+    });
+    
+    return {
+        tradeAmount: tradeAmount,
+        outputAmount: outputAmount.toFixed(6),
+        expectedOutput: expectedOutput.toFixed(6),
+        slippage: (slippage * 100).toFixed(3) + '%',
+        priceImpact: (priceImpact * 100).toFixed(3) + '%',
+        fee: (fee * 100).toFixed(2) + '%',
+        scenarios: slippageScenarios,
+        recommendation: this.getSlippageRecommendation(slippage),
+        optimalTradeSize: this.calculateOptimalTradeSize(poolTVL)
+    };
+};
 
-    /**
-     * Assess various risk factors
-     * @param {Object} poolData - Pool data
-     * @returns {Object} Risk assessment
-     */
-    assessRisks(poolData) {
-        const impermanentLossRisk = this.calculateILRisk(poolData);
-        const liquidityRisk = this.calculateLiquidityRisk(poolData);
-        const concentrationRisk = this.calculateConcentrationRisk(poolData);
-        const smartContractRisk = this.assessSmartContractRisk(poolData);
-        
-        return {
-            impermanentLoss: {
-                level: impermanentLossRisk.level,
-                probability: impermanentLossRisk.probability,
-                potentialLoss: impermanentLossRisk.potentialLoss,
-                timeframe: '30 days'
-            },
-            liquidity: {
-                level: liquidityRisk.level,
-                exitDifficulty: liquidityRisk.exitDifficulty,
-                slippageRisk: liquidityRisk.slippageRisk
-            },
-            concentration: {
-                level: concentrationRisk.level,
-                topHolderPercentage: concentrationRisk.topHolderPercentage,
-                whaleRisk: concentrationRisk.whaleRisk
-            },
-            smartContract: {
-                level: smartContractRisk.level,
-                auditStatus: smartContractRisk.auditStatus,
-                timelock: smartContractRisk.timelock
-            },
-            overallRisk: this.calculateOverallRisk(impermanentLossRisk, liquidityRisk, concentrationRisk, smartContractRisk)
-        };
-    }
-
-    /**
-     * Find arbitrage opportunities across Base DEXs
-     * @param {Object} poolData - Current pool data
-     * @returns {Object} Arbitrage opportunities
-     */
-    async findArbitrageOpportunities(poolData) {
-        const opportunities = [];
-        const protocols = Object.keys(this.dexProtocols);
-        
-        for (let i = 0; i < protocols.length; i++) {
-            for (let j = i + 1; j < protocols.length; j++) {
-                const protocol1 = protocols[i];
-                const protocol2 = protocols[j];
-                
-                const price1 = await this.getTokenPrice(poolData.token0, poolData.token1, protocol1);
-                const price2 = await this.getTokenPrice(poolData.token0, poolData.token1, protocol2);
-                
-                const priceDiff = Math.abs(price1 - price2);
-                const profitability = (priceDiff / Math.min(price1, price2)) * 100;
-                
-                if (profitability > 0.1) { // Minimum 0.1% profit threshold
-                    opportunities.push({
-                        buyFrom: price1 < price2 ? protocol1 : protocol2,
-                        sellTo: price1 < price2 ? protocol2 : protocol1,
-                        profitability: profitability.toFixed(3),
-                        estimatedProfit: this.calculateArbitrageProfit(priceDiff, poolData.tvl),
-                        gasOptimized: true,
-                        baseL2Advantage: 'Low gas costs enable profitable small arbitrage'
-                    });
-                }
-            }
+/**
+ * Calculate optimal trade size to minimize slippage
+ * @param {number} poolTVL - Pool total value locked
+ * @returns {Object} Optimal trade recommendations
+ */
+BaseLiquidityAnalyzer.prototype.calculateOptimalTradeSize = function(poolTVL) {
+    const maxRecommendedTrade = poolTVL * 0.01; // 1% of pool
+    const conservativeTrade = poolTVL * 0.005; // 0.5% of pool
+    const aggressiveTrade = poolTVL * 0.02; // 2% of pool
+    
+    return {
+        conservative: {
+            amount: conservativeTrade,
+            expectedSlippage: '< 0.1%',
+            description: 'Minimal price impact, suitable for large trades'
+        },
+        recommended: {
+            amount: maxRecommendedTrade,
+            expectedSlippage: '< 0.5%',
+            description: 'Balanced approach with acceptable slippage'
+        },
+        aggressive: {
+            amount: aggressiveTrade,
+            expectedSlippage: '< 1%',
+            description: 'Higher slippage but faster execution'
         }
+    };
+};
+
+/**
+ * Advanced MEV (Maximal Extractable Value) analysis
+ * @param {Object} poolData - Pool data
+ * @param {Array} recentTrades - Recent trade history
+ * @returns {Object} MEV analysis
+ */
+BaseLiquidityAnalyzer.prototype.analyzeMEVRisks = function(poolData, recentTrades = []) {
+    const mevIndicators = {
+        frontrunningRisk: 0,
+        sandwichAttackRisk: 0,
+        arbitrageOpportunity: 0,
+        liquidationRisk: 0
+    };
+    
+    // Analyze recent trades for MEV patterns
+    if (recentTrades.length > 0) {
+        const largeTrades = recentTrades.filter(trade => trade.amount > poolData.tvl * 0.01);
+        const rapidTrades = this.detectRapidTrading(recentTrades);
+        const priceManipulation = this.detectPriceManipulation(recentTrades);
         
-        return {
-            opportunities,
-            totalOpportunities: opportunities.length,
-            bestOpportunity: opportunities.length > 0 ? opportunities.reduce((best, current) => 
-                parseFloat(current.profitability) > parseFloat(best.profitability) ? current : best
-            ) : null
-        };
+        mevIndicators.frontrunningRisk = largeTrades.length / recentTrades.length * 100;
+        mevIndicators.sandwichAttackRisk = rapidTrades.suspiciousPatterns * 20;
+        mevIndicators.arbitrageOpportunity = priceManipulation.volatility * 10;
     }
+    
+    // Calculate liquidity concentration risk
+    const concentrationRisk = this.calculateConcentrationRisk(poolData);
+    mevIndicators.liquidationRisk = concentrationRisk.score;
+    
+    const overallMEVRisk = Object.values(mevIndicators).reduce((sum, risk) => sum + risk, 0) / 4;
+    
+    return {
+        indicators: mevIndicators,
+        overallRisk: overallMEVRisk.toFixed(2),
+        riskLevel: overallMEVRisk > 70 ? 'High' : overallMEVRisk > 40 ? 'Medium' : 'Low',
+        recommendations: this.generateMEVRecommendations(mevIndicators),
+        protectionStrategies: [
+            'Use private mempools for large trades',
+            'Split large orders into smaller chunks',
+            'Monitor for unusual trading patterns',
+            'Consider using MEV protection services',
+            'Time trades during high activity periods'
+        ]
+    };
+};
 
-    /**
-     * Calculate liquidity depth for different trade sizes
-     * @param {Object} poolData - Pool data
-     * @returns {Object} Liquidity depth metrics
-     */
-    calculateLiquidityDepth(poolData) {
-        const depth1Percent = poolData.tvl * 0.01; // 1% price impact depth
-        const depth5Percent = poolData.tvl * 0.05; // 5% price impact depth
-        
-        let score = 0;
-        let rating = 'Poor';
-        
-        if (depth1Percent > 100000) {
-            score += 40;
-        } else if (depth1Percent > 50000) {
-            score += 25;
-        } else if (depth1Percent > 10000) {
-            score += 10;
+/**
+ * Detect rapid trading patterns
+ * @param {Array} trades - Trade history
+ * @returns {Object} Rapid trading analysis
+ */
+BaseLiquidityAnalyzer.prototype.detectRapidTrading = function(trades) {
+    let suspiciousPatterns = 0;
+    const timeThreshold = 60000; // 1 minute
+    
+    for (let i = 1; i < trades.length; i++) {
+        const timeDiff = new Date(trades[i].timestamp) - new Date(trades[i-1].timestamp);
+        if (timeDiff < timeThreshold && trades[i].amount > trades[i-1].amount * 0.8) {
+            suspiciousPatterns++;
         }
-        
-        if (depth5Percent > 500000) {
-            score += 60;
-        } else if (depth5Percent > 250000) {
-            score += 40;
-        } else if (depth5Percent > 50000) {
-            score += 20;
-        }
-        
-        if (score >= 80) rating = 'Excellent';
-        else if (score >= 60) rating = 'Good';
-        else if (score >= 40) rating = 'Fair';
-        
-        return {
-            score,
-            rating,
-            depth1Percent: depth1Percent.toFixed(0),
-            depth5Percent: depth5Percent.toFixed(0)
-        };
     }
+    
+    return {
+        suspiciousPatterns: suspiciousPatterns,
+        totalTrades: trades.length,
+        suspiciousRatio: suspiciousPatterns / trades.length
+    };
+};
 
-    /**
-     * Calculate price stability metrics
-     * @param {Object} poolData - Pool data
-     * @returns {Object} Price stability metrics
-     */
-    calculatePriceStability(poolData) {
-        const volatility24h = poolData.priceHistory ? 
-            this.calculateVolatility(poolData.priceHistory) : 0.02;
-        const priceDeviation = Math.abs(poolData.currentPrice - poolData.averagePrice) / poolData.averagePrice;
+/**
+ * Advanced liquidity mining optimization
+ * @param {Object} farmingData - Farming pool data
+ * @param {Object} userPreferences - User risk preferences
+ * @returns {Object} Optimized farming strategy
+ */
+BaseLiquidityAnalyzer.prototype.optimizeLiquidityMining = function(farmingData, userPreferences = {}) {
+    const {
+        riskTolerance = 'medium',
+        minAPY = 5,
+        maxImpermanentLoss = 20,
+        preferredTokens = [],
+        investmentAmount = 10000
+    } = userPreferences;
+    
+    const strategies = [];
+    
+    // Analyze each farming opportunity
+    Object.keys(farmingData).forEach(poolId => {
+        const pool = farmingData[poolId];
+        const ilRisk = this.calculateImpermanentLossRisk(pool);
+        const yieldAnalysis = this.analyzeYieldStability(pool);
         
-        let score = 100;
-        if (volatility24h > 0.1) score -= 50;
-        else if (volatility24h > 0.05) score -= 30;
-        else if (volatility24h > 0.02) score -= 15;
-        
-        if (priceDeviation > 0.05) score -= 30;
-        else if (priceDeviation > 0.02) score -= 15;
-        
-        const rating = score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : score >= 40 ? 'Fair' : 'Poor';
-        
-        return {
-            score: Math.max(0, score),
-            rating,
-            volatility24h: (volatility24h * 100).toFixed(2),
-            priceDeviation: (priceDeviation * 100).toFixed(2)
-        };
-    }
-
-    /**
-     * Generate actionable recommendations
-     * @param {Object} healthMetrics - Pool health data
-     * @param {Object} riskAssessment - Risk data
-     * @returns {Array} Recommendations
-     */
-    generateRecommendations(healthMetrics, riskAssessment) {
-        const recommendations = [];
-        
-        if (healthMetrics.overallHealth.score < 60) {
-            recommendations.push('⚠️ Pool health is below optimal - consider reducing position size');
+        if (pool.apy >= minAPY && ilRisk.maxLoss <= maxImpermanentLoss) {
+            const strategy = {
+                poolId: poolId,
+                tokens: [pool.token0, pool.token1],
+                apy: pool.apy,
+                tvl: pool.tvl,
+                impermanentLossRisk: ilRisk,
+                yieldStability: yieldAnalysis,
+                riskScore: this.calculatePoolRiskScore(pool, ilRisk, yieldAnalysis),
+                recommendedAllocation: this.calculateOptimalAllocation(
+                    pool, investmentAmount, riskTolerance
+                ),
+                entryStrategy: this.generateEntryStrategy(pool),
+                exitStrategy: this.generateExitStrategy(pool)
+            };
+            
+            strategies.push(strategy);
         }
-        
-        if (riskAssessment.impermanentLoss.level === 'High') {
-            recommendations.push('🔴 High impermanent loss risk - monitor price correlation closely');
-        }
-        
-        if (riskAssessment.liquidity.level === 'Low') {
-            recommendations.push('💧 Low liquidity detected - expect higher slippage on large trades');
-        }
-        
-        if (healthMetrics.liquidityDepth.score > 80) {
-            recommendations.push('✅ Excellent liquidity depth - suitable for large positions');
-        }
-        
-        recommendations.push('⚡ Base L2 provides significant gas savings for frequent rebalancing');
-        recommendations.push('📊 Consider using automated strategies for optimal yield');
-        
-        return recommendations;
+    });
+    
+    // Sort by risk-adjusted returns
+    strategies.sort((a, b) => (b.apy / b.riskScore) - (a.apy / a.riskScore));
+    
+    return {
+        strategies: strategies.slice(0, 5), // Top 5 strategies
+        portfolioAllocation: this.createPortfolioAllocation(strategies, investmentAmount),
+        riskAssessment: this.assessPortfolioRisk(strategies),
+        rebalancingSchedule: this.createRebalancingSchedule(strategies),
+        monitoringAlerts: this.setupMonitoringAlerts(strategies)
+    };
+};
+
+/**
+ * Generate DEX recommendations based on comparison
+ * @param {Object} dexResults - Results from cross-DEX analysis
+ * @returns {Object} Recommendations
+ */
+BaseLiquidityAnalyzer.prototype.generateDEXRecommendations = function(dexResults) {
+    const recommendations = {
+        smallTrades: null,
+        mediumTrades: null,
+        largeTrades: null,
+        liquidityProviding: null
+    };
+    
+    const validDexes = Object.keys(dexResults).filter(dex => !dexResults[dex].error);
+    
+    if (validDexes.length === 0) {
+        return { error: 'No valid DEX data available' };
     }
+    
+    // Small trades (< $1k) - prioritize low fees
+    recommendations.smallTrades = validDexes.reduce((best, dex) => {
+        const current = dexResults[dex];
+        const bestData = dexResults[best];
+        return current.slippageAt1k < bestData.slippageAt1k ? dex : best;
+    });
+    
+    // Medium trades ($1k - $10k) - balance fees and slippage
+    recommendations.mediumTrades = validDexes.reduce((best, dex) => {
+        const current = dexResults[dex];
+        const bestData = dexResults[best];
+        const currentScore = current.slippageAt10k + (current.fees24h / current.volume24h * 100);
+        const bestScore = bestData.slippageAt10k + (bestData.fees24h / bestData.volume24h * 100);
+        return currentScore < bestScore ? dex : best;
+    });
+    
+    // Large trades (> $10k) - prioritize liquidity depth
+    recommendations.largeTrades = validDexes.reduce((best, dex) => {
+        const current = dexResults[dex];
+        const bestData = dexResults[best];
+        return current.liquidityDepth > bestData.liquidityDepth ? dex : best;
+    });
+    
+    // Liquidity providing - prioritize TVL and fees
+    recommendations.liquidityProviding = validDexes.reduce((best, dex) => {
+        const current = dexResults[dex];
+        const bestData = dexResults[best];
+        const currentScore = current.tvl * (current.fees24h / current.tvl);
+        const bestScore = bestData.tvl * (bestData.fees24h / bestData.tvl);
+        return currentScore > bestScore ? dex : best;
+    });
+    
+    return recommendations;
+};
 
-    /**
-     * Calculate overall pool health score
-     * @param {Object} liquidityDepth - Liquidity metrics
-     * @param {Object} priceStability - Price metrics
-     * @param {Object} volumeConsistency - Volume metrics
-     * @returns {Object} Overall health score
-     */
-    calculateOverallHealth(liquidityDepth, priceStability, volumeConsistency) {
-        const weightedScore = (
-            liquidityDepth.score * 0.4 +
-            priceStability.score * 0.35 +
-            volumeConsistency.score * 0.25
-        );
-        
-        let rating = 'Poor';
-        if (weightedScore >= 80) rating = 'Excellent';
-        else if (weightedScore >= 65) rating = 'Good';
-        else if (weightedScore >= 45) rating = 'Fair';
-        
-        return {
-            score: Math.round(weightedScore),
-            rating,
-            recommendation: rating === 'Excellent' ? 'Ideal for large positions' :
-                           rating === 'Good' ? 'Suitable for medium positions' :
-                           rating === 'Fair' ? 'Proceed with caution' :
-                           'Consider alternative pools'
-        };
-    }
-
-    /**
-     * Mock data fetcher (replace with actual Web3 calls)
-     * @param {string} poolAddress - Pool address
-     * @param {string} protocol - Protocol name
-     * @returns {Object} Pool data
-     */
-    async fetchPoolData(poolAddress, protocol) {
-        // Mock data - replace with actual blockchain calls
-        return {
-            tvl: 2500000,
-            volume24h: 850000,
-            fees24h: 2550,
-            currentPrice: 1.0025,
-            averagePrice: 1.0000,
-            token0: 'USDC',
-            token1: 'ETH',
-            priceHistory: [1.000, 1.002, 0.998, 1.001, 1.003, 0.999, 1.002]
-        };
-    }
-}
-
-// Export for Base dApp integration
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = BaseLiquidityAnalyzer;
-}
-
-// Example usage
-const analyzer = new BaseLiquidityAnalyzer();
-
-// Example: Analyze Aerodrome USDC/ETH pool
-analyzer.analyzePool('0x...', 'aerodrome').then(analysis => {
-    console.log('Base Liquidity Pool Analysis:', analysis);
-}).catch(error => {
-    console.error('Analysis failed:', error);
+/**
+ * Get slippage recommendation
+ * @param {number} slippage - Calculated slippage
+ * @returns {string} Recommendation
+ */
+BaseLiquidityAnalyzer.prototype.getSlippageRecommendation = function(slippage) {
+    if (slippage < 0.001) return 'Excellent - proceed with confidence';
+    if (slippage < 0.005) return 'Good - acceptable for most trades';
+    if (slippage < 0.01) return 'Moderate - consider splitting large trades';
+    if (slippage < 0.02) return 'High - split trade or use different DEX';
+    return 'Very High - avoid or use alternative routing';
+};
 });
