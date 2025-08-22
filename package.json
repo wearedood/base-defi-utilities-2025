@@ -1,0 +1,151 @@
+{
+  "name": "base-defi-utilities-2025",
+  "version": "1.0.0",
+  "description": "A comprehensive collection of smart contract utilities and tools for DeFi development on Base blockchain",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc && npm run build:docs",
+    "build:docs": "typedoc --out docs src",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "start": "node dist/index.js",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "test:integration": "jest --config jest.integration.config.js",
+    "test:e2e": "jest --config jest.e2e.config.js",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write src/**/*.ts",
+    "format:check": "prettier --check src/**/*.ts",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist",
+    "prepublishOnly": "npm run clean && npm run build && npm run test",
+    "deploy:testnet": "hardhat deploy --network base-goerli",
+    "deploy:mainnet": "hardhat deploy --network base",
+    "verify": "hardhat verify --network base",
+    "coverage": "jest --coverage && open coverage/lcov-report/index.html",
+    "audit": "npm audit && npm audit fix",
+    "security": "npm audit --audit-level moderate",
+    "docs:serve": "http-server docs -p 8080",
+    "analyze": "npm run build && bundlesize"
+  },
+  "keywords": [
+    "defi",
+    "base",
+    "blockchain",
+    "ethereum",
+    "smart-contracts",
+    "yield-farming",
+    "liquidity",
+    "trading",
+    "utilities",
+    "web3",
+    "dapp",
+    "cryptocurrency",
+    "base-builder-rewards"
+  ],
+  "author": "wearedood",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wearedood/base-defi-utilities-2025.git"
+  },
+  "bugs": {
+    "url": "https://github.com/wearedood/base-defi-utilities-2025/issues"
+  },
+  "homepage": "https://github.com/wearedood/base-defi-utilities-2025#readme",
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.9.3",
+    "@openzeppelin/contracts-upgradeable": "^4.9.3",
+    "ethers": "^6.7.1",
+    "web3": "^4.1.1",
+    "axios": "^1.5.0",
+    "lodash": "^4.17.21",
+    "bignumber.js": "^9.1.2",
+    "decimal.js": "^10.4.3",
+    "moment": "^2.29.4",
+    "dotenv": "^16.3.1",
+    "winston": "^3.10.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.5.9",
+    "@types/jest": "^29.5.5",
+    "@types/lodash": "^4.14.197",
+    "@typescript-eslint/eslint-plugin": "^6.6.0",
+    "@typescript-eslint/parser": "^6.6.0",
+    "typescript": "^5.2.2",
+    "ts-node": "^10.9.1",
+    "ts-node-dev": "^2.0.0",
+    "jest": "^29.6.4",
+    "ts-jest": "^29.1.1",
+    "eslint": "^8.48.0",
+    "prettier": "^3.0.3",
+    "hardhat": "^2.17.2",
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "@nomiclabs/hardhat-waffle": "^2.0.6",
+    "hardhat-deploy": "^0.11.37",
+    "hardhat-gas-reporter": "^1.0.9",
+    "solidity-coverage": "^0.8.4",
+    "typedoc": "^0.25.1",
+    "rimraf": "^5.0.1",
+    "http-server": "^14.1.1",
+    "bundlesize": "^0.18.1"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "bundlesize": [
+    {
+      "path": "./dist/index.js",
+      "maxSize": "100 kB"
+    }
+  ],
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.d.ts",
+      "!src/types/**/*"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "functions": 80,
+        "lines": 80,
+        "statements": 80
+      }
+    }
+  },
+  "eslintConfig": {
+    "extends": [
+      "@typescript-eslint/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+      "@typescript-eslint"
+    ],
+    "rules": {
+      "@typescript-eslint/no-unused-vars": "error",
+      "@typescript-eslint/explicit-function-return-type": "warn"
+    }
+  },
+  "prettier": {
+    "semi": true,
+    "trailingComma": "es5",
+    "singleQuote": true,
+    "printWidth": 80,
+    "tabWidth": 2
+  }
+}
